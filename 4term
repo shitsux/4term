@@ -1,0 +1,132 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
+import terminology as term
+import fchan
+
+import sys
+from argparse import ArgumentParser
+from select import select
+from urllib import urlretrieve
+
+
+def appendMultiline(left, right, sep=""):
+	ret = ""
+	left = left.split("\n")
+	right = right.split("\n")
+	for i in range(0, max(len(left), len(right))):
+		if i < len(left):
+			if i < len(right):
+				ret += left[i] + sep + right[i] + "\n"
+			else:
+				ret += left[i] + "\n"
+		elif i < len(right):
+			ret += right[i] + "\n"
+	return ret
+
+def printPost(post):
+	ret = ""
+	ret += "%s %s %s\n" % (term.colorize(post.user.name or "", 'green'),
+			post.getTime().isoformat(), post.id)
+	if post.subject:
+		ret += term.colorize(post.subject, 'blue') + '\n'
+
+	stack = []
+	for i in post.getTokenizedComment():
+		if isinstance(i, unicode):
+			if stack:
+				stack.append(i)
+			else:
+				ret += i
+		elif i[0] == "QUOTE":
+			ret += term.changeColor('qgreen')
+		elif i[0] == "QUOTE_END":
+			ret += term.resetColor()
+		elif i[0] == "I":
+			ret += term.startItalic()
+		elif i[0] == "I_END":
+			ret += term.stopItalic()
+		elif i[0] == "BR":
+			ret += "\n"
+		elif i[0] == "LINK":
+			stack.append((i[1],))
+		elif i[0] == "LINK_END":
+			link = stack.pop()
+			while isinstance(stack[-1], unicode):
+				link = stack.pop() + link
+			stack.pop() # just ignore href for now
+			if stack:
+				stack.append(link)
+			else:
+				ret += link
+
+	w,h = term.getSize()
+	if post.file:
+		img = term.loadImage('t', '#', 14, 7, post.file.thumb_url, post.file.url)
+		print appendMultiline('\n'.join(img),
+				term.wrap(ret, w+8-len(img[0])), " ")
+	else:
+		print term.wrap(ret, w)
+
+	if post.n_replies and post.n_images:
+		print term.colorize("-----\t< %i posts and %i images replies omitted"
+				% (post.n_replies, post.n_images), "grey")
+	else:
+		print term.colorize("-----", "grey")
+	print
+
+
+if __name__ == '__main__':
+	parser = ArgumentParser(description='Use 4chan from the command line')
+	parser.add_argument('-p', help='Make a post',
+			dest='make_post', action='store_const', const=True, default=False)
+	parser.add_argument('-n', help='Name',
+			dest='name', default='')
+	parser.add_argument('-m', help='E-Mail',
+			dest='email', default='')
+	parser.add_argument('-s', help='Subject',
+			dest='subject', default='')
+	parser.add_argument('-f', help='File to upload',
+			dest='file', default=None)
+	parser.add_argument('-k', help='Post password',
+			dest='pwd', default='')
+	parser.add_argument('id', metavar='BOARD/THREAD',
+			help='Address of post/board to show/post to (e.g. g/12342344)')
+	parser.add_argument('comment', default='',
+			metavar='COMMENT', type=str, nargs='*')
+
+	args = parser.parse_args()
+
+	tmp = args.id.split('/')
+	if len(tmp) > 1:
+		board, thread = tmp
+		thread = int(thread)
+	else:
+		board = tmp[0]
+		thread = None
+
+	if args.make_post:
+		post = fchan.fchan.Post(board)
+		post.comment = ' '.join(args.comment)
+		post.name = args.name
+		post.email = args.email
+		post.subject = args.subject
+		poster = fchan.post.Poster(board, post, thread, args.pwd, args.file)
+		poster.fetch()
+		while 1:
+			# a fake image extension is included in the URL
+			#  because terminology is being a retard
+			print '\n'.join(term.loadImage('c', '#', 50, 6,
+				poster.captcha.getImage() + "#.jpg"))
+			if poster.captcha.solve(raw_input("Enter CAPTCHA: ")):
+				break
+			print 'CAPTCHA not accepted - try again.'
+		poster.post()
+	else:
+		if thread:
+			for post in fchan.getThread(board, thread):
+				printPost(post)
+		else:
+			for post in fchan.getPageFromCatalog(board):
+				printPost(post)
