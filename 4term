@@ -4,7 +4,7 @@
 import terminology as term
 import fchan
 
-import sys, signal
+import sys, signal, codecs
 from argparse import ArgumentParser
 from select import select
 from urllib import urlretrieve
@@ -77,6 +77,8 @@ def printPost(post):
 
 
 if __name__ == '__main__':
+	# force output encoding to be unicode
+	sys.stdout = codecs.getwriter('utf8')(sys.stdout)
 	# quit when program piped to quits
 	signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
