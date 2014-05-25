@@ -6,7 +6,7 @@ Access to the 4chan JSON API
 """
 
 import json
-from urllib import urlopen 
+from urllib2 import urlopen, HTTPError
 
 from fchan import Post, File, User
 
@@ -17,11 +17,22 @@ THREAD = "https://a.4cdn.org/%s/thread/%i.json" # board name, thread id
 
 
 def getPageFromCatalog(board, page=0):
-	for thread in json.load(urlopen(CAT % board))[page]['threads']:
+	try:
+		page = json.load(urlopen(CAT % board))
+	except HTTPError, e:
+		raise Exception("\"%s\" doesn't exist. Specified board likely to be incorrect" % (CAT % board))
+	if page not in range(0, len(page)):
+		raise Exception("Page \"%i\" doesn't exist" % page)
+
+	for thread in page[page]['threads']:
 		yield JsonOP(board, thread)
 
 def getThread(board, thread):
-	for post in json.load(urlopen(THREAD % (board, thread)))['posts']:
+	try:
+		page = json.load(urlopen(THREAD % (board, thread)))
+	except HTTPError, e:
+		raise Exception("\"%s\" doesn't exist. Board or thread (must be OP!) likely to be incorrect" % (THREAD % (board, thread)))
+	for post in page['posts']:
 		yield JsonPost(board, post)
 
 
