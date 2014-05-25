@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import signal
+signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 import terminology as term
 import fchan
 
-import sys
+import sys, signal
 from argparse import ArgumentParser
 from select import select
 from urllib import urlretrieve
@@ -78,6 +80,9 @@ def printPost(post):
 
 
 if __name__ == '__main__':
+	# quit when program piped to quits
+	signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
 	parser = ArgumentParser(description='Use 4chan from the command line')
 	parser.add_argument('-p', help='Make a post',
 			dest='make_post', action='store_const', const=True, default=False)
