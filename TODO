@@ -1,0 +1,25 @@
+- frontpage mode
+- watch mode, which keeps updating thread instead of quitting
+- cache results, offer shortcuts
+
+# Terminology
+- Try latest builds, instead of E18
+- Look into Terminology's problem with webm (just file extension related?)
+
+# 4chan
+- Board specific features (spoilers, code, flags, IDs, etc.)
+- 4chan pass support
+- probably more
+- respect API/other usage rules
+
+## Things the API doesn't seem to support
+- Text search
+
+## Things 4chan doesn't seem to support at all
+- Find threads through reply post numbers
+- Other search/filtering functions
+
+# related ideas outside scope of project
+
+- FUSE interface
+- Full TUI with mouse support
