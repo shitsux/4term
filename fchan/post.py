@@ -76,7 +76,7 @@ class Poster:
 			form.add_field(k, v)
 
 		if self.file:
-			form.add_file('upfile', self.file, open(file, 'r'))
+			form.add_file('upfile', self.file, open(self.file, 'r'))
 
 		request = Request(POST % self.board)
 
