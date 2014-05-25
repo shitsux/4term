@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import signal
-signal.signal(signal.SIGPIPE, signal.SIG_DFL)
-
 import terminology as term
 import fchan
 
